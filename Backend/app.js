@@ -1,87 +1,117 @@
+require("dotenv").config({path: './config/.env'});
 const express=require("express");
 const mongoose=require("mongoose")
 const bodyParser= require("body-parser");
-require("dotenv").config({path: './config/.env'});
 const morgan=require("morgan")
-const app=express();
-const patientSchema=require("./Schema/patient")
-const connectDb=require("./config/db")
-app.use(morgan('dev'));
 const session=require("express-session");
 const passport=require("passport");
-const patient = require("./Schema/patient");
 const GoogleStrategy=require("passport-google-oauth20").Strategy
 const path=require('path')
+const passportLocalMongoose=require("passport-local-mongoose")
+const LocalStrategy = require('passport-local').Strategy;
+const MongoStore=require('connect-mongo')
 
-const Patient=new mongoose.model("Patient",patientSchema)
+/* MODELS */
+const Patient= require("./Schema/patient.js")
+const Medical= require("./Schema/medical.js")
+
+/* config*/
+const app=express();
+const connectDb=require("./config/db")
+app.use(express.static(path.join(__dirname,'public')));
+app.use(morgan('dev'));
 app.set('view engine', 'ejs');
-
 app.use(bodyParser.urlencoded({extended:true}))
 
 
-connectDb();
-app.use(express.static(path.join(__dirname,'public')));
 
 
 
+
+/*  Storing the sessions */
 
 app.use(session({
   secret: "Iamthesecret",
   resave: false,
   saveUninitialized: false,
   //cookie: { secure: false }
+  store:MongoStore.create({mongoUrl:'mongodb://127.0.0.1/hackathonDb'})
 }))
 
 app.use(passport.initialize());
 app.use(passport.session());
+app.use(passport.authenticate('session'))
+
+/* Connecting with the database */
+connectDb();
 
 
-passport.use(new GoogleStrategy({
-  clientID: process.env.CLIENT_ID,
-  clientSecret: process.env.CLIENT_SECRET,
-  callbackURL: "http://localhost:3000/auth/google/dashboard",
-  scope:['profile','email']
-}, async (accessToken, refreshToken, profile, done) => {
-  try {
-    let patient = await Patient.findOne({ googleId: profile.id });
-    if (patient) {
-      return done(null, patient);
-    } 
-    else {
-      console.log(profile)
-      const newPatient = new Patient({
-        googleId: profile.id,
-        fname: profile.name.givenName,
-        lname: profile.name.familyName,
-        email: profile.emails.value
-      });
-      patient = await newPatient.save();
-      return done(null, patient);
-    }
-  } 
-  catch (error) {
-    console.error(error);
-    return done(error, null);
+
+require('./config/googlestrategy.js')(passport);
+
+require('./config/localstrategy.js')(passport);
+
+/* Medical Routes */
+
+app.get("/medicalDashboard",(req,res)=>
+{
+  res.render("./medical/medicalDashboard")
+})
+
+app.get("/medicalLogin",(req,res)=>
+{
+  res.render("./medical/medicalLogin")
+})
+
+
+app.get("/medicalRegistration",(req,res)=>
+{
+  res.render("./medical/medicalRegistration")
+})
+
+
+app.get('/secrets', (req, res) => {
+  console.log('User:', req.user);
+  console.log(req.isAuthenticated())
+  if (req.isAuthenticated()) {
+    res.send('secrets');
+  } else {
+    res.send("not authenticated");
   }
-}));
-
-
-passport.serializeUser((patient, done)=> {
-  done(null, patient.id); 
 });
 
-passport.deserializeUser((id, done) => {
-  Patient.findById(id)
-    .then(patient => done(null, patient))
-    .catch(err => done(err, null));
+
+app.post('/medical', (req, res) => {
+  console.log("hii")
+  console.log(req.body)
+  Medical.register(new Medical({ username:req.body.username,medicalName:req.body.medicalName,regDate:req.body.regDate}), req.body.password, (err, user) => {
+    if (err) {
+      console.log(err);
+      res.status(400).send(err);
+    } else {
+      console.log(user)
+      passport.authenticate('medicalocal')(req, res, () => {
+        console.log(req.isAuthenticated())
+        console.log(req.user);
+        req.session.save(() => {
+        res.status(200).redirect("/secrets");
+        })
+      });
+    }
+  });
 });
 
+app.post('/login', passport.authenticate('medicalocal',{ failureRedirect:"/" ,successRedirect:"secrets" }));
+
+
+
+/*Home Page  */
 app.get('/',(req,res)=>{
     res.render("home")
 })
 
 
-  
+/* Patient Login */
  app.get('/patientlogin',(req,res)=>{
      res.render("patientlogin")
 })
@@ -91,21 +121,17 @@ app.post("/loginpatient",async (req,res)=>{
   try {
     
   } catch (err) {
-    res.send("error 404")
-    
-  }
-
+    res.send("error 404")}
 })
 
-app.get("/patientRegister",(req,res)=>{
-  res.render("patientregister")
+app.get("/patientRegister",(req,res)=>{res.render("patientregister")
 })
 
- app.get('/auth/google',passport.authenticate('google', { scope: ['profile','email'] }));
+app.get('/auth/google',passport.authenticate('google', { scope: ['profile','email'] }));
 
- app.get('/auth/google/dashboard',  passport.authenticate('google', { failureRedirect: '/' , successRedirect:"/dashboard" }));
+app.get('/auth/google/dashboard',  passport.authenticate('google', { failureRedirect: '/' , successRedirect:"/dashboard" }));
 
- app.get('/dashboard', (req, res) => {
+app.get('/dashboard', (req, res) => {
    if (req.isAuthenticated()) {
      res.render('dashboard');
    } else {
@@ -113,6 +139,8 @@ app.get("/patientRegister",(req,res)=>{
    }
  });
 
+
+ /* Logout */
 
  app.get('/logout', function(req, res) {
    req.logout(function(err) {

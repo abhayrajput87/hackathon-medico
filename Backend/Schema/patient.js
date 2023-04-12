@@ -1,12 +1,37 @@
 const mongoose=require("mongoose");
 
-module.exports = new mongoose.Schema(
+const patientSchema = new mongoose.Schema(
     {
-        fname:String,
-        lname: String,
-        email: String,
-        googleId: String,
-        gender:String,
-        birthday:Date
+        p_id:{
+            type: String,
+            required:true,
+            unique: true
+        },
+        fname:{
+            type: String,
+            required: true
+        },
+        lname:{
+            type: String,
+            required: true
+        },
+        email:{
+            type: String,
+            required: true
+        },
+        googleId:{
+            type: String,
+            required: true
+        },
+        
+        gender:{
+            type: String,
+            default: ""
+        },
+        birthday:{
+            type: Date
+        },
     }
 )
+
+module.exports= new mongoose.model("Patient",patientSchema)
