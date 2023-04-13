@@ -10,6 +10,8 @@ const path=require('path')
 const passportLocalMongoose=require("passport-local-mongoose")
 const LocalStrategy = require('passport-local').Strategy;
 const MongoStore=require('connect-mongo')
+const generateUniqueId = require('generate-unique-id');
+const multer  = require('multer');
 
 /* MODELS */
 const Patient= require("./Schema/patient.js")
@@ -40,7 +42,7 @@ app.use(session({
 
 app.use(passport.initialize());
 app.use(passport.session());
-app.use(passport.authenticate('session'))
+
 
 /* Connecting with the database */
 connectDb();
@@ -48,7 +50,6 @@ connectDb();
 
 
 require('./config/googlestrategy.js')(passport);
-
 require('./config/localstrategy.js')(passport);
 
 /* Medical Routes */
@@ -81,31 +82,37 @@ app.get('/secrets', (req, res) => {
 });
 
 
-app.post('/medical', (req, res) => {
+app.post('/medicalRegistration', (req, res) => {
   console.log("hii")
   console.log(req.body)
-  Medical.register(new Medical({ username:req.body.username,medicalName:req.body.medicalName,regDate:req.body.regDate}), req.body.password, (err, user) => {
-    if (err) {
+  Medical.register(new Medical({ username:req.body.username, medicalName:req.body.medicalName, regDate:req.body.regDate}), req.body.password, (err, user) => {
+    if (err) 
+    {
       console.log(err);
       res.status(400).send(err);
-    } else {
+    } 
+    else 
+    {
       console.log(user)
       passport.authenticate('medicalocal')(req, res, () => {
-        console.log(req.isAuthenticated())
-        console.log(req.user);
-        req.session.save(() => {
-        res.status(200).redirect("/secrets");
+      console.log(req.isAuthenticated())
+      console.log(req.user);
+      req.session.save(() => {
+      res.status(200).redirect("/secrets");
         })
-      });
+      })
     }
-  });
+  })
 });
 
-app.post('/login', passport.authenticate('medicalocal',{ failureRedirect:"/" ,successRedirect:"secrets" }));
+app.post('/medicalLogin', passport.authenticate('medicalocal',{ failureRedirect:"/" }),(req,res)=>{
+ // req.session.user=req.user;
+  res.redirect("/secrets")
+});
 
 
 
-/*Home Page  */
+/* Home Page  */
 app.get('/',(req,res)=>{
     res.render("home")
 })
@@ -113,29 +120,52 @@ app.get('/',(req,res)=>{
 
 /* Patient Login */
  app.get('/patientlogin',(req,res)=>{
-     res.render("patientlogin")
+     res.render("./patient/patientLogin")
 })
 
-app.post("/loginpatient",async (req,res)=>{
-  email:req.body.email
-  try {
-    
-  } catch (err) {
-    res.send("error 404")}
+app.post("/patientRegister", (req,res)=>{
+
+  const id = generateUniqueId({length: 7}); //To generate a unique id      
+   Patient.register(new Patient({ 
+    p_id:id,
+    fname: req.body.fname,
+    lname:req.body.lname,
+    username:req.body.email,
+    gender:req.body.gender,
+    googleId: "abc",
+    birthday:req.body.birthday
+  }),
+    req.body.password, (err, user) => {
+    if (err) 
+    {
+      console.log(err);
+      res.status(400).send(err);
+    } 
+    else 
+    {
+      console.log(user)
+      passport.authenticate('patientLocal')(req, res, () => {
+      console.log(req.isAuthenticated())
+      console.log(req.user);
+      res.status(200).redirect("secrets");
+        
+      });
+    }
+  });
 })
 
-app.get("/patientRegister",(req,res)=>{res.render("patientregister")
+app.get("/patientRegister",(req,res)=>{res.render("./patient/patientRegister")
 })
 
 app.get('/auth/google',passport.authenticate('google', { scope: ['profile','email'] }));
 
-app.get('/auth/google/dashboard',  passport.authenticate('google', { failureRedirect: '/' , successRedirect:"/dashboard" }));
+app.get('/auth/google/dashboard',  passport.authenticate('google', { failureRedirect: '/' , successRedirect:"/patientDashboard"}));
 
-app.get('/dashboard', (req, res) => {
+app.get('/patientDashboard', (req, res) => {
    if (req.isAuthenticated()) {
-     res.render('dashboard');
+     res.render('./patient/patientDashboard');
    } else {
-     res.redirect('/login');
+     res.redirect('/patientLogin');
    }
  });
 
@@ -153,13 +183,6 @@ app.get('/dashboard', (req, res) => {
 
 
 
-app.get("/patient",(req,res)=>(
-    res.send("patient route")
-))
-
-app.post("/patient",(req,res)=>{
-
-})
 
 
 

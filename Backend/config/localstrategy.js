@@ -1,10 +1,12 @@
 const LocalStrategy = require('passport-local');
 const Medical=require("../Schema/medical.js");
+const Patient =require("../Schema/patient.js")
 
 
 module.exports=(passport)=>{
   
-passport.use("medicalocal", new LocalStrategy(Medical.authenticate()));
+passport.use("medicalocal" , new LocalStrategy(Medical.authenticate()));
+passport.use("patientLocal" , new LocalStrategy(Patient.authenticate()));
 
 passport.serializeUser(function(user, cb) {
   process.nextTick(function() {

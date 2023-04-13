@@ -1,4 +1,5 @@
 const mongoose=require("mongoose");
+const passportLocalMongoose=require("passport-local-mongoose")
 
 const patientSchema = new mongoose.Schema(
     {
@@ -15,23 +16,24 @@ const patientSchema = new mongoose.Schema(
             type: String,
             required: true
         },
-        email:{
+        username:{
             type: String,
             required: true
         },
         googleId:{
-            type: String,
-            required: true
+            type: String
+
         },
         
         gender:{
-            type: String,
-            default: ""
+            type: String
         },
         birthday:{
             type: Date
-        },
+        }
+
     }
 )
 
+patientSchema.plugin(passportLocalMongoose);
 module.exports= new mongoose.model("Patient",patientSchema)

@@ -27,7 +27,7 @@ module.exports= (passport)=>{passport.use(new GoogleStrategy({
           googleId: profile.id,
           fname: profile.name.givenName,
           lname: profile.name.familyName,
-          email: profile.emails[0].value
+          username: profile.emails[0].value
         });
         patient = await newPatient.save();
         return done(null, patient);
