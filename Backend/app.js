@@ -12,16 +12,19 @@ const LocalStrategy = require('passport-local').Strategy;
 const MongoStore=require('connect-mongo')
 const generateUniqueId = require('generate-unique-id');
 const multer  = require('multer');
+const expressLayouts = require('express-ejs-layouts')
 
 /* MODELS */
 const Patient= require("./Schema/patient.js")
 const Medical= require("./Schema/medical.js")
 
-/* config*/
+/* config */
 const app=express();
 const connectDb=require("./config/db")
 app.use(express.static(path.join(__dirname,'public')));
 app.use(morgan('dev'));
+app.use(expressLayouts)
+app.set('layout', './layouts/main')
 app.set('view engine', 'ejs');
 app.use(bodyParser.urlencoded({extended:true}))
 
@@ -53,6 +56,17 @@ require('./config/googlestrategy.js')(passport);
 require('./config/localstrategy.js')(passport);
 
 /* Medical Routes */
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, '/tmp/my-uploads')
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
+    cb(null, file.fieldname + '-' + uniqueSuffix)
+  }
+})
+
+const upload = multer({ storage: storage })
 
 app.get("/medicalDashboard",(req,res)=>
 {
