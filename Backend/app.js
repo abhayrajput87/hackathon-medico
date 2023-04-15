@@ -17,6 +17,7 @@ const expressLayouts = require('express-ejs-layouts')
 /* MODELS */
 const Patient= require("./Schema/patient.js")
 const Medical= require("./Schema/medical.js")
+const Report=require("./Schema/reports.js")
 
 /* config */
 const app=express();
@@ -29,7 +30,19 @@ app.set('view engine', 'ejs');
 app.use(bodyParser.urlencoded({extended:true}))
 
 
+/* FILE STORAGE */
 
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    return cb(null, './public/uploadedfiles')
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
+     return cb(null, file.fieldname + '-' + uniqueSuffix)
+  }
+});
+
+const upload = multer({ storage })
 
 
 
@@ -55,27 +68,35 @@ connectDb();
 require('./config/googlestrategy.js')(passport);
 require('./config/localstrategy.js')(passport);
 
-/* Medical Routes */
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, '/tmp/my-uploads')
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
-    cb(null, file.fieldname + '-' + uniqueSuffix)
-  }
+
+
+/* Upload Routes */
+app.post("/submitReport/:userid",upload.single('report'), async(req,res)=>{
+   const report =new Report({
+    userId: req.params.userid,
+    description: req.body.message,
+    picturePath: req.file.path,
+    pictureName: req.file.filename
+   })
+   
+   const saved=await Report.create(report)
+  console.log(saved)
+  console.log(req.body.message)
+  console.log(req.file);
+  res.status(200).send('File uploaded successfully');
+
 })
 
-const upload = multer({ storage: storage })
 
-app.get("/medicalDashboard",(req,res)=>
-{
-  res.render("./medical/medicalDashboard")
-})
+
+
 
 app.get("/medicalLogin",(req,res)=>
 {
-  res.render("./medical/medicalLogin")
+ 
+  res.render("./medical/medicalLogin" ,{
+    layout:"./layouts/form"
+  })
 })
 
 
@@ -119,11 +140,31 @@ app.post('/medicalRegistration', (req, res) => {
   })
 });
 
-app.post('/medicalLogin', passport.authenticate('medicalocal',{ failureRedirect:"/" }),(req,res)=>{
+app.post('/medicalLogin',(req,res)=>{
  // req.session.user=req.user;
-  res.redirect("/secrets")
+  res.redirect("/medicalDashboard")
 });
 
+app.get("/medicalDashboard",(req,res)=>{
+  res.render("./medical/medicalDashboard",{
+    layout:"./layouts/medical"
+  })
+})
+
+app.post("/medicalDashboard",async (req,res)=>{
+  const user_id= req.body.user_id;
+  const foundPatient=await Patient.find({p_id:user_id })
+  const patientName=foundPatient[0].fname + " " +foundPatient[0].lname;
+
+  console.log(foundPatient)
+  console.log(patientName)
+  console.log("bye")
+        res.render("./medical/patients",{
+          patient:patientName,
+          userid:user_id,
+          layout: "./layouts/medical"
+        })
+})
 
 
 /* Home Page  */

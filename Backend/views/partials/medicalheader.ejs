@@ -1,0 +1,39 @@
+<!-- Underscore header because its a partial-->
+<nav class="sticky top-0 bg-gray-900 drop-shadow-md min-w-full  mx-auto py-4 px-6">
+    <!--Flex conatiner-->
+    <div class="flex items-center justify-between">
+        <!--logo-->
+            <a href="#" class="flex items-center text-2xl font-semibold text-gray-900 dark:text-white">
+                <img class="w-8 h-8 mr-2" src="https://flowbite.s3.amazonaws.com/blocks/marketing-ui/logo.svg" alt="logo">
+                MEDICO   
+              </a>
+        
+        <div class="hidden text-white md:flex space-x-6">
+            <a href="#"class="hover:text-darkGrayishBlue" >Home</a>
+            <a href="#"class="hover:text-darkGrayishBlue" >ContactUs</a>
+            <a href="#"class="hover:text-darkGrayishBlue" >Logout</a>
+            <!-- <a href="#"class="hover:text-darkGrayishBlue" ></a> -->
+        </div>
+        <!--Button
+        <a href="#" class="hidden md:block px-6 py-2 p-3 bg-brightRed rounded-full text-white baseline hover:bg-brightRedLight">Get Started</a>-->
+        
+        
+        
+        
+    <!--Hamburger menu-->
+    <button id="menu-btn" class="block hamburger md:hidden focus:outline-none">
+        <span class="hamburger-top"></span>
+        <span class="hamburger-middle"></span>
+        <span class="hamburger-bottom"></span>
+
+    </button>
+    </div>
+    <div class="md:hidden">
+        <div id="menu" class="absolute flex-col hidden items-center self-end py-8 mt-10 space-y-6 font-bold bg-white sm:w-auto sm:self-center left-6 right-6 drop-shadow-md">
+            <a href="#">Pricing</a>
+            <a href="#">Contact Us</a>
+            <a href="#">Share</a>
+            <a href="#">Earn</a>
+        </div>
+    </div>
+</nav>
