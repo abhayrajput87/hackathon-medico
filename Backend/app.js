@@ -102,7 +102,9 @@ app.get("/medicalLogin",(req,res)=>
 
 app.get("/medicalRegistration",(req,res)=>
 {
-  res.render("./medical/medicalRegistration")
+  res.render("./medical/medicalRegistration",{
+    layout:"./layouts/form"
+  })
 })
 
 
@@ -118,8 +120,7 @@ app.get('/secrets', (req, res) => {
 
 
 app.post('/medicalRegistration', (req, res) => {
-  console.log("hii")
-  console.log(req.body)
+
   Medical.register(new Medical({ username:req.body.username, medicalName:req.body.medicalName, regDate:req.body.regDate}), req.body.password, (err, user) => {
     if (err) 
     {
@@ -174,7 +175,7 @@ app.get('/',(req,res)=>{
 
 
 /* Patient Login */
- app.get('/patientlogin',(req,res)=>{
+ app.get('/patientLogin',(req,res)=>{
      res.render("./patient/patientLogin")
 })
 
@@ -224,8 +225,17 @@ app.get('/patientDashboard', (req, res) => {
    }
  });
 
+ /* Doctor Routes */
 
- /* Logout */
+ app.get("/doctorDashboard",(req,res)=>{
+  res.render("./doctor/doctorDashboard",{
+    layout:"./layouts/medical"
+  });
+
+ })
+
+
+ /*Logout*/
 
  app.get('/logout', function(req, res) {
    req.logout(function(err) {
@@ -234,6 +244,31 @@ app.get('/patientDashboard', (req, res) => {
      }                // this method is provided by Passport to remove the user from the session
  )});
 
+ app.post("/doctorPatient", async(req,res)=>{
+  try {
+    const id= req.body.user_id;
+    const foundReport=  await Report.find({userId:id})
+    const foundPatient= await Patient.find({p_id:id});
+    const patientName=foundPatient[0].fname + " " +foundPatient[0].lname;
+    const picturePath= "./uploadedfiles/"+ foundReport[0].pictureName;
+    const description= foundReport[0].description;
+    const email=foundPatient[0].username;
+
+    console.log(picturePath);
+    res.render("./doctor/reportsview",{
+    picturepath:picturePath,
+    patient:patientName,
+    description:description,
+    username:email,
+    layout:"./layouts/medical" 
+     })
+  } catch (err) {
+    res.json({error:err.message})
+    
+  }
+
+
+ })
 
 
 
